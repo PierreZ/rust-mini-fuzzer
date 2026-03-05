@@ -1,0 +1,3 @@
+[workspace]
+members = ["sancov-rt", "mini-fuzzer"]
+resolver = "3"
