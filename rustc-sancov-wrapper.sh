@@ -19,7 +19,7 @@ for arg in "$@"; do
     prev="$arg"
 done
 
-if [[ "$CRATE_NAME" == "mini_fuzzer" ]]; then
+if [[ "$CRATE_NAME" == "fuzz_target" ]]; then
     exec "$RUSTC" "$@" \
         -C passes=sancov-module \
         -C llvm-args=--sanitizer-coverage-level=3 \

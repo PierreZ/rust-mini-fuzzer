@@ -33,9 +33,12 @@
 //!   that register counter arrays at startup, and provides safe APIs for the fuzzer to
 //!   read/reset/snapshot the counters. This crate is **not instrumented**.
 //!
-//! - **`mini-fuzzer`** (this crate) — The fuzzer engine and the target function. This
-//!   crate **is instrumented** via `rustc-sancov-wrapper.sh`, which injects
-//!   `-C passes=sancov-module` only for this crate.
+//! - **`fuzz-target`** — The target function being fuzzed. This is the **only crate
+//!   that gets instrumented** via `rustc-sancov-wrapper.sh`, so the edge count
+//!   reflects only the target's complexity.
+//!
+//! - **`mini-fuzzer`** (this crate) — The fuzzer engine. It is **not instrumented**,
+//!   so its own code doesn't pollute the coverage metrics.
 //!
 //! # Running
 //!
@@ -49,8 +52,6 @@
 //!
 //! The fuzzer will discover coverage incrementally and eventually find the
 //! magic `FUZZ` byte sequence that triggers a panic in the target.
-
-mod target;
 
 use rand::Rng;
 use std::panic;
@@ -108,7 +109,7 @@ fn main() {
 
         if tracker.has_new_coverage(&snap) {
             let covered = tracker.total_edges_covered();
-            let result = target::target(&[]); // won't matter, just for display
+            let result = fuzz_target::target(&[]); // won't matter, just for display
             let _ = result;
             println!(
                 "#{iter:<6}  NEW  input={:?} ({}B)  corpus={}  edges={}/{}  ({:.1}%)",
@@ -151,7 +152,7 @@ fn main() {
 /// otherwise unused.
 fn run_target(input: &[u8]) -> bool {
     let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-        std::hint::black_box(target::target(std::hint::black_box(input)));
+        std::hint::black_box(fuzz_target::target(std::hint::black_box(input)));
     }));
     result.is_err()
 }

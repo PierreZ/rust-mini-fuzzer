@@ -40,7 +40,7 @@
 //!
 //! This crate must **not** be instrumented itself — it provides the callbacks that LLVM's
 //! instrumentation calls into. Instrumenting it would create circular references. The
-//! `rustc-sancov-wrapper.sh` script ensures only the `mini_fuzzer` crate gets the sancov
+//! `rustc-sancov-wrapper.sh` script ensures only the `fuzz_target` crate gets the sancov
 //! pass.
 
 use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};

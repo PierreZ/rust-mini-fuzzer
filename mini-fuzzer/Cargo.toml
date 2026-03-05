@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 sancov-rt = { path = "../sancov-rt" }
+fuzz-target = { path = "../fuzz-target" }
 rand = "0.9"

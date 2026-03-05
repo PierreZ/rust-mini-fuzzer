@@ -1,7 +1,13 @@
 //! Fuzz target with progressively harder-to-reach code paths.
 //!
-//! This module defines the function we're fuzzing. It is designed to demonstrate
-//! how coverage-guided fuzzing discovers nested branches incrementally:
+//! This crate is intentionally separated from the fuzzer engine so that
+//! **only this code gets instrumented** by the SanitizerCoverage pass.
+//! This way, the edge count reported by the fuzzer reflects only the
+//! target's complexity — not the fuzzer's own mutation/formatting code
+//! or monomorphized standard library generics.
+//!
+//! The target is designed to demonstrate how coverage-guided fuzzing
+//! discovers nested branches incrementally:
 //!
 //! 1. The first byte (`data[0] % 4`) selects one of four **entry paths**
 //! 2. Each path has its own depth and branching logic

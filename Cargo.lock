@@ -39,6 +39,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "fuzz-target"
+version = "0.1.0"
+
+[[package]]
 name = "getrandom"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -72,6 +76,7 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 name = "mini-fuzzer"
 version = "0.1.0"
 dependencies = [
+ "fuzz-target",
  "rand",
  "sancov-rt",
 ]
