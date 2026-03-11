@@ -25,33 +25,25 @@
 //! 4. If the input reached a new coverage bucket → **add it to the corpus**
 //! 5. If the target **panicked** → we found a crash!
 //!
-//! # Two-crate architecture
+//! # Three-crate architecture
 //!
-//! The project is split into two crates:
+//! - **`sancov-rt`** — The SanitizerCoverage runtime. Implements LLVM callbacks
+//!   and provides safe APIs for counter access. **Not instrumented.**
 //!
-//! - **`sancov-rt`** — The SanitizerCoverage runtime. It implements the LLVM callbacks
-//!   that register counter arrays at startup, and provides safe APIs for the fuzzer to
-//!   read/reset/snapshot the counters. This crate is **not instrumented**.
+//! - **`fuzz-target`** — The target function (nested magic-byte checks). The
+//!   **only crate instrumented** via `rustc-sancov-wrapper.sh`.
 //!
-//! - **`fuzz-target`** — The target function being fuzzed. This is the **only crate
-//!   that gets instrumented** via `rustc-sancov-wrapper.sh`, so the edge count
-//!   reflects only the target's complexity.
-//!
-//! - **`mini-fuzzer`** (this crate) — The fuzzer engine. It is **not instrumented**,
-//!   so its own code doesn't pollute the coverage metrics.
+//! - **`mini-fuzzer`** (this crate) — The fuzzer engine. **Not instrumented.**
 //!
 //! # Running
 //!
 //! ```bash
-//! # Enter the nix dev shell (provides Rust + llvm-tools-preview)
 //! nix develop
-//!
-//! # Build and run
 //! cargo run
 //! ```
 //!
 //! The fuzzer will discover coverage incrementally and eventually find the
-//! magic `FUZZ` byte sequence that triggers a panic in the target.
+//! magic `FUZ` byte sequence that triggers a panic in the target.
 
 use rand::Rng;
 use std::panic;
@@ -74,7 +66,7 @@ fn main() {
     println!();
 
     let mut tracker = sancov_rt::CoverageTracker::new();
-    let mut corpus: Vec<Vec<u8>> = vec![vec![]]; // seed: one empty input
+    let mut corpus: Vec<Vec<u8>> = vec![vec![0; 3]]; // seed: 3 zero bytes
     let mut rng = rand::rng();
 
     let max_iterations = 1_000_000;
@@ -109,8 +101,6 @@ fn main() {
 
         if tracker.has_new_coverage(&snap) {
             let covered = tracker.total_edges_covered();
-            let result = fuzz_target::target(&[]); // won't matter, just for display
-            let _ = result;
             println!(
                 "#{iter:<6}  NEW  input={:?} ({}B)  corpus={}  edges={}/{}  ({:.1}%)",
                 format_input(&input),
@@ -130,7 +120,7 @@ fn main() {
     println!(
         "  Iterations:  {}",
         if crash_found {
-            format!("stopped at crash")
+            "stopped at crash".to_string()
         } else {
             format!("{max_iterations}")
         }
@@ -166,7 +156,11 @@ fn run_target(input: &[u8]) -> bool {
 /// If the input is empty, always inserts (can't flip or erase nothing).
 fn mutate(base: &[u8], rng: &mut impl Rng) -> Vec<u8> {
     let mut buf = base.to_vec();
-    let strategy = if buf.is_empty() { 0 } else { rng.random_range(0..3u8) };
+    let strategy = if buf.is_empty() {
+        0
+    } else {
+        rng.random_range(0..3u8)
+    };
 
     match strategy {
         0 => {

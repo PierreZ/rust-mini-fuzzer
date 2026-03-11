@@ -74,6 +74,12 @@ pub struct PcTableEntry {
 /// The region `[start, stop)` is a contiguous array with one byte per
 /// instrumented edge. LLVM generates a call to this function in a module
 /// constructor, so it runs before `main()`.
+///
+/// # Safety
+///
+/// Must only be called by LLVM-generated module constructors. The pointers
+/// `start` and `stop` must delimit a valid, contiguous counter array that
+/// remains live for the entire process lifetime.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __sanitizer_cov_8bit_counters_init(start: *mut u8, stop: *mut u8) {
     let len = stop as usize - start as usize;
@@ -87,6 +93,12 @@ pub unsafe extern "C" fn __sanitizer_cov_8bit_counters_init(start: *mut u8, stop
 /// Each entry is a `(pc, flags)` pair, parallel to the counter array.
 /// This allows the fuzzer to map a counter index back to a code address
 /// for reporting and symbolization.
+///
+/// # Safety
+///
+/// Must only be called by LLVM-generated module constructors. The pointers
+/// must delimit a valid PC table array that remains live for the entire
+/// process lifetime.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __sanitizer_cov_pcs_init(pcs_beg: *const usize, pcs_end: *const usize) {
     let byte_len = pcs_end as usize - pcs_beg as usize;
@@ -229,6 +241,12 @@ pub fn classify_counts(buf: &mut [u8]) {
 /// ```
 pub struct CoverageTracker {
     history: Vec<u8>,
+}
+
+impl Default for CoverageTracker {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CoverageTracker {
